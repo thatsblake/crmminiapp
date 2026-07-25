@@ -1,73 +1,127 @@
+<!-- Этот файл НЕ нужен отдельно, если используешь Worker выше: он отдаёт Mini App по /mini/app -->
+<!-- Но если хочешь хостить Mini App на GitHub Pages / другом хостинге — используй этот код -->
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ozon CRM Helper</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            background: #0d0d1a;
-            color: #e8d5e0;
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            margin: 0;
-        }
-        .card {
-            background: #1a1a2e;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            border: 1px solid #ff6b9d;
-        }
-        h1 { color: #ff6b9d; }
-        button {
-            background: linear-gradient(135deg, #ff6b9d, #c084fc);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            width: 100%;
-            margin-top: 10px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ozon CRM Mini App</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; background:#0d0d1a; color:#e8d5e0; padding:14px; }
+  .card { background:#1a1a2e; border:1px solid #ff6b9d; border-radius:18px; padding:14px; margin-bottom:12px; box-shadow:0 4px 20px rgba(255,107,157,0.15); }
+  h1 { font-size:17px; margin:0 0 12px; color:#ff6b9d; display:flex; align-items:center; gap:6px; }
+  .row { margin-bottom:10px; }
+  .row:last-child { margin-bottom:0; }
+  .label { color:#a88b9e; font-size:11px; text-transform:uppercase; letter-spacing:0.3px; margin-bottom:3px; }
+  .value { color:#fff; font-size:16px; font-weight:600; }
+  .value.small { font-size:14px; }
+  button { width:100%; background:linear-gradient(135deg,#ff6b9d,#c084fc); color:white; border:none; border-radius:12px; padding:12px; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:10px; box-shadow:0 4px 14px rgba(255,107,157,0.3); }
+  button:active { transform:scale(0.98); }
+  button.secondary { background:#2a1a3e; border:1px solid #c084fc; color:#c084fc; box-shadow:none; font-weight:600; }
+  button.status { padding:10px; font-size:13px; margin-bottom:0; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .log { font-size:12px; padding:10px; border-radius:10px; background:#2a1a2e; border:1px solid #3a2a3e; color:#e8d5e0; display:none; }
+  .log.ok { border-color:#00ff88; color:#ccffdd; }
+  .log.err { border-color:#ff4d6d; color:#ffccd5; }
+  .muted { color:#a88b9e; font-size:12px; text-align:center; margin-top:8px; }
+</style>
 </head>
 <body>
-    <h1>🎫 Ozon CRM Helper</h1>
-    <div class="card">
-        <h3>📊 Статистика</h3>
-        <div id="stats">Загрузка...</div>
-    </div>
-    <div class="card">
-        <h3>🎫 Текущий тикет</h3>
-        <div id="ticket">Нет активного тикета</div>
-    </div>
-    <button onclick="refreshData()">🔄 Обновить</button>
-    
-    <script>
-        var tg = window.Telegram.WebApp;
-        tg.expand();
-        
-        function refreshData() {
-            // Здесь будет логика получения данных из CRM
-            document.getElementById('stats').innerHTML = 'Загрузка...';
-            // Отправка данных обратно в бота
-            tg.sendData(JSON.stringify({action: 'refresh'}));
-        }
-        
-        // Получение данных от скрипта
-        window.addEventListener('message', function(event) {
-            if (event.data.type === 'crm-data') {
-                document.getElementById('stats').innerHTML = 
-                    '🔄 Перефразировано: ' + event.data.paraphrased + '<br>' +
-                    '🎫 Тикетов: ' + event.data.tickets;
-            }
-        });
-        
-        refreshData();
-    </script>
+<div class="card">
+  <h1>🎫 Текущий тикет</h1>
+  <div class="row">
+    <div class="label">Номер</div>
+    <div class="value" id="ticket-num">—</div>
+  </div>
+  <div class="row">
+    <div class="label">Тип</div>
+    <div class="value small" id="ticket-type">—</div>
+  </div>
+  <div class="row">
+    <div class="label">Осталось времени</div>
+    <div class="value" id="ticket-time">—</div>
+  </div>
+  <div class="row">
+    <div class="label">Клиент</div>
+    <div class="value small" id="ticket-client">—</div>
+  </div>
+  <div class="row">
+    <div class="label">Статус оператора</div>
+    <div class="value small" id="operator-status">—</div>
+  </div>
+</div>
+
+<div class="card">
+  <h1>⚡ Действия</h1>
+  <button onclick="sendCmd('extend')">🔄 Продлить тикет</button>
+  <div class="grid">
+    <button class="secondary status" onclick="sendCmd('status', 'ready')">🟢 На линии</button>
+    <button class="secondary status" onclick="sendCmd('status', 'rest')">🟡 Отдых</button>
+  </div>
+  <button class="secondary status" onclick="sendCmd('status', 'lunch')">🟠 Обед</button>
+  <button class="secondary" onclick="sendCmd('info')">🔄 Обновить информацию</button>
+</div>
+
+<div class="log" id="log">—</div>
+<div class="muted">Данные обновляются каждые 5 сек</div>
+
+<script>
+  const WORKER_URL = 'https://crmhelper2026.berlogaklodi.workers.dev';
+  const SECRET = 'ozon-crm-secret-2026-change-me';
+
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  function showLog(text, isError) {
+    const el = document.getElementById('log');
+    el.textContent = text;
+    el.style.display = 'block';
+    el.className = 'log ' + (isError ? 'err' : 'ok');
+  }
+
+  async function loadState() {
+    try {
+      const r = await fetch(WORKER_URL + '/mini/state', {
+        headers: { 'X-Mini-Secret': SECRET }
+      });
+      const s = await r.json();
+      if (!s.ok && s.error === 'No state yet') return;
+      document.getElementById('ticket-num').textContent = s.ticketNumber || '—';
+      document.getElementById('ticket-type').textContent = s.ticketType || '—';
+      document.getElementById('ticket-time').textContent = s.timeLeft || '—';
+      document.getElementById('ticket-client').textContent = s.client || '—';
+      document.getElementById('operator-status').textContent = s.status || '—';
+    } catch (e) {
+      console.error('loadState error:', e);
+    }
+  }
+
+  async function sendCmd(command, payload) {
+    try {
+      const r = await fetch(WORKER_URL + '/mini/command', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Mini-Secret': SECRET
+        },
+        body: JSON.stringify({ command, payload })
+      });
+      const data = await r.json();
+      if (data.ok) {
+        showLog('✅ Команда отправлена в браузер');
+      } else {
+        showLog('❌ ' + (data.error || 'Ошибка'), true);
+      }
+    } catch (e) {
+      showLog('❌ ' + e.message, true);
+    }
+  }
+
+  loadState();
+  setInterval(loadState, 5000);
+</script>
 </body>
 </html>
