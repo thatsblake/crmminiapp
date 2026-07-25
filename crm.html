@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ozon CRM Helper</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background: #0d0d1a;
+            color: #e8d5e0;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+        .card {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid #ff6b9d;
+        }
+        h1 { color: #ff6b9d; }
+        button {
+            background: linear-gradient(135deg, #ff6b9d, #c084fc);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎫 Ozon CRM Helper</h1>
+    <div class="card">
+        <h3>📊 Статистика</h3>
+        <div id="stats">Загрузка...</div>
+    </div>
+    <div class="card">
+        <h3>🎫 Текущий тикет</h3>
+        <div id="ticket">Нет активного тикета</div>
+    </div>
+    <button onclick="refreshData()">🔄 Обновить</button>
+    
+    <script>
+        var tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        function refreshData() {
+            // Здесь будет логика получения данных из CRM
+            document.getElementById('stats').innerHTML = 'Загрузка...';
+            // Отправка данных обратно в бота
+            tg.sendData(JSON.stringify({action: 'refresh'}));
+        }
+        
+        // Получение данных от скрипта
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'crm-data') {
+                document.getElementById('stats').innerHTML = 
+                    '🔄 Перефразировано: ' + event.data.paraphrased + '<br>' +
+                    '🎫 Тикетов: ' + event.data.tickets;
+            }
+        });
+        
+        refreshData();
+    </script>
+</body>
+</html>
